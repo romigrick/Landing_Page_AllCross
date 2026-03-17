@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Phone } from 'lucide-react'
-
-const WA_LINK = "https://wa.me/5541998460353?text=Olá!%20Vi%20a%20página%20e%20gostaria%20de%20receber%20uma%20cotação%20de%20plano%20de%20saúde."
+import { openConsultantWA } from '../utils/openWA'
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false)
@@ -37,25 +36,21 @@ export default function Header() {
         </div>
 
         {/* CTA */}
-        <a
-          href={WA_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hidden sm:flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-body font-600 text-sm px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-amber-400/40 hover:shadow-lg hover:-translate-y-0.5"
+        <button
+          onClick={() => openConsultantWA()}
+          className="hidden sm:flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-white font-body font-semibold text-sm px-5 py-2.5 rounded-full transition-all duration-200 shadow-md hover:shadow-amber-400/40 hover:shadow-lg hover:-translate-y-0.5"
           aria-label="Falar com especialista no WhatsApp"
         >
           <Phone size={15} strokeWidth={2.5} />
           Falar com especialista
-        </a>
-        <a
-          href={WA_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sm:hidden flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white font-body font-600 text-sm px-4 py-2 rounded-full transition-all duration-200"
+        </button>
+        <button
+          onClick={() => openConsultantWA()}
+          className="sm:hidden flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white font-body font-semibold text-sm px-4 py-2 rounded-full transition-all duration-200"
         >
           <Phone size={14} />
           Cotação
-        </a>
+        </button>
       </div>
     </header>
   )

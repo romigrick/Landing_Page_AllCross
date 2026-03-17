@@ -1,7 +1,8 @@
 import { useReveal } from '../hooks/useReveal'
+import { openConsultantWA } from '../utils/openWA'
 import { Users, Briefcase, Building2, Heart } from 'lucide-react'
 
-const WA_LINK = "https://wa.me/5541998460353?text=Olá!%20Vi%20a%20página%20e%20gostaria%20de%20receber%20uma%20cotação%20de%20plano%20de%20saúde."
+
 
 const segments = [
   {
@@ -102,10 +103,8 @@ export default function ForWhom() {
                   <div className={`inline-flex items-center gap-1.5 text-xs font-body font-semibold px-3 py-1.5 rounded-full border ${accentColors[seg.accent]} mb-5`}>
                     <span>✓</span> {seg.highlight}
                   </div>
-                  <a
-                    href={WA_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => openConsultantWA()}
                     className={`w-full text-center font-body font-semibold text-sm py-3 rounded-xl transition-all duration-200 ${
                       seg.featured
                         ? 'bg-amber-500 hover:bg-amber-400 text-white shadow-lg shadow-amber-200'
@@ -113,7 +112,7 @@ export default function ForWhom() {
                     }`}
                   >
                     Quero uma cotação
-                  </a>
+                  </button>
                 </div>
               </div>
             )

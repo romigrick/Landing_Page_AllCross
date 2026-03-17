@@ -1,17 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useReveal } from '../hooks/useReveal'
-import { Send, CheckCircle, AlertCircle, ChevronDown } from 'lucide-react'
-
-const WA_BASE = "https://wa.me/5541998460353?text="
+import { CheckCircle, AlertCircle, ChevronDown } from 'lucide-react'
+import { openConsultantWA } from '../utils/openWA'
 
 const planTypes = [
-  { value: '', label: 'Selecione o tipo de plano' },
-  { value: 'individual', label: 'Individual' },
-  { value: 'familiar', label: 'Familiar (2 ou mais pessoas)' },
-  { value: 'mei', label: 'Empresarial — MEI' },
+  { value: '',            label: 'Selecione o tipo de plano' },
+  { value: 'individual',  label: 'Individual' },
+  { value: 'familiar',    label: 'Familiar (2 ou mais pessoas)' },
+  { value: 'mei',         label: 'Empresarial — MEI' },
   { value: 'empresarial', label: 'Empresarial — PME (2 a 29 vidas)' },
-  { value: 'senior', label: 'MedSênior (60+ anos)' },
+  { value: 'senior',      label: 'MedSênior (60+ anos)' },
 ]
+
+const EMPTY_FORM = { name: '', phone: '', city: '', planType: '', message: '' }
 
 function Field({ label, error, children }) {
   return (
@@ -31,16 +32,11 @@ function Field({ label, error, children }) {
 
 export default function LeadForm() {
   const { ref, visible } = useReveal()
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    city: '',
-    planType: '',
-    message: '',
-  })
-  const [errors, setErrors] = useState({})
+  const [form, setForm]       = useState(EMPTY_FORM)
+  const [errors, setErrors]   = useState({})
   const [submitted, setSubmitted] = useState(false)
 
+  /* ── Máscara de telefone ── */
   const formatPhone = (v) => {
     const d = v.replace(/\D/g, '').slice(0, 11)
     if (d.length <= 2) return d
@@ -54,38 +50,33 @@ export default function LeadForm() {
     if (errors[field]) setErrors(err => ({ ...err, [field]: '' }))
   }
 
+  /* ── Validação ── */
   const validate = () => {
     const e = {}
-    if (!form.name.trim()) e.name = 'Nome obrigatório'
-    const phone = form.phone.replace(/\D/g, '')
-    if (phone.length < 10) e.phone = 'WhatsApp inválido'
-    if (!form.planType) e.planType = 'Selecione o tipo de plano'
+    if (!form.name.trim())                          e.name     = 'Nome obrigatório'
+    if (form.phone.replace(/\D/g, '').length < 10) e.phone    = 'WhatsApp inválido'
+    if (!form.planType)                             e.planType = 'Selecione o tipo de plano'
     return e
   }
 
-  const submit = (e) => {
+  /* ── Submit: round-robin → abre WA do consultor da vez ── */
+  const submit = async (e) => {
     e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
 
-    const planLabel = planTypes.find(p => p.value === form.planType)?.label || form.planType
-    const msg = [
-      `Olá! Vi a página da AllCross e gostaria de receber uma cotação.`,
-      ``,
-      `*Nome:* ${form.name}`,
-      `*Telefone:* ${form.phone}`,
-      form.city ? `*Cidade:* ${form.city}` : '',
-      `*Tipo de plano:* ${planLabel}`,
-      form.message ? `*Observações:* ${form.message}` : '',
-    ].filter(Boolean).join('\n')
-
-    window.open(WA_BASE + encodeURIComponent(msg), '_blank')
+    // Salva lead + abre WhatsApp do consultor da vez (round-robin global)
+    await openConsultantWA(form)
     setSubmitted(true)
   }
 
   return (
-    <section className="py-20 bg-navy-gradient relative overflow-hidden" id="cotacao" ref={ref}>
-      {/* Background */}
+    <section
+      className="py-20 bg-navy-gradient relative overflow-hidden"
+      id="cotacao"
+      ref={ref}
+    >
+      {/* BG blobs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl" />
         <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-blue-600/10 blur-3xl" />
@@ -93,21 +84,21 @@ export default function LeadForm() {
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left text */}
+
+          {/* ── Left: copy ── */}
           <div className={`reveal ${visible ? 'visible' : ''}`}>
             <span className="inline-block text-amber-400 font-body text-sm font-semibold uppercase tracking-widest mb-4">
               Cotação gratuita
             </span>
             <h2 className="font-display text-4xl sm:text-5xl text-white leading-tight mb-6">
               Receba sua cotação{' '}
-              <em className="not-italic text-gradient-gold">personalizada</em>
-              {' '}agora
+              <em className="not-italic text-gradient-gold">personalizada</em>{' '}agora
             </h2>
             <p className="text-white/60 font-body text-lg leading-relaxed mb-8">
-              Preencha o formulário e um especialista entrará em contato em até 1 hora com um comparativo das melhores opções para o seu perfil.
+              Preencha o formulário e um especialista entrará em contato em até 1 hora
+              com um comparativo das melhores opções para o seu perfil.
             </p>
 
-            {/* Benefits list */}
             <ul className="space-y-4">
               {[
                 'Comparamos até 10 operadoras para você',
@@ -125,9 +116,10 @@ export default function LeadForm() {
             </ul>
           </div>
 
-          {/* Form */}
+          {/* ── Right: form ── */}
           <div className={`reveal reveal-delay-2 ${visible ? 'visible' : ''}`}>
             {submitted ? (
+              /* Success state */
               <div className="bg-white rounded-3xl p-10 text-center shadow-2xl">
                 <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle size={36} className="text-emerald-500" />
@@ -136,16 +128,18 @@ export default function LeadForm() {
                   Mensagem enviada!
                 </h3>
                 <p className="text-gray-500 font-body text-sm leading-relaxed mb-6">
-                  Seu WhatsApp já está aberto com nossa mensagem. Um especialista retornará em até 1 hora com sua cotação personalizada.
+                  Seu WhatsApp já está aberto. Um especialista retornará em até 1 hora
+                  com sua cotação personalizada.
                 </p>
                 <button
-                  onClick={() => { setSubmitted(false); setForm({ name:'',phone:'',city:'',planType:'',message:'' }) }}
+                  onClick={() => { setSubmitted(false); setForm(EMPTY_FORM) }}
                   className="text-amber-600 font-body font-medium text-sm underline underline-offset-2"
                 >
                   Preencher novamente
                 </button>
               </div>
             ) : (
+              /* Form */
               <form
                 onSubmit={submit}
                 className="bg-white rounded-3xl p-8 shadow-2xl shadow-navy-950/40"
